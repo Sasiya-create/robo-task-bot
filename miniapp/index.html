@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Earn Bot</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://sad.adsgram.ai/js/sad.min.js"></script>
+<style>
+body{font-family:Arial;background:#0f0f0f;color:#fff;margin:0;padding:16px;padding-bottom:80px}
+.card{background:#1e1e1e;padding:16px;border-radius:12px;margin-bottom:12px}
+.btn{background:#2ea6ff;color:#fff;padding:12px;border:none;border-radius:8px;width:100%;font-weight:bold;margin-top:8px}
+input{width:100%;padding:10px;margin:6px 0;background:#2a2a2a;color:#fff;border:none;border-radius:8px;box-sizing:border-box}
+.bar{display:flex;justify-content:space-around;position:fixed;bottom:0;left:0;right:0;background:#1a1a1a;padding:12px;border-top:1px solid #333}
+.bar button{background:none;border:none;color:#aaa;font-size:12px}
+code{word-break:break-all;background:#333;padding:4px;border-radius:4px;font-size:12px}
+</style>
+</head>
+<body>
+<h2>💰 Earn Center</h2>
+
+<div class="card">
+<p>Ad = $0.05 | 30/Day | Referral = $0.02</p>
+<p>Today: <span id="cnt">0</span>/30 | Balance: $<span id="bal">0.00</span></p>
+<button class="btn" id="watchBtn">▶️ Watch Ad & Earn $0.05</button>
+</div>
+
+<div class="card">
+<h3>➕ Add Your Task</h3>
+<p>Up to 2000 members = $4, 2000+ Unlimited = $6</p>
+<p>Pay to (USDT BEP20):<br><code>0x52824938de138886fdf6f7a80262e5c0a173d92c</code></p>
+<input id="taskTitle" placeholder="Task Title">
+<input id="taskLink" placeholder="Group Link https://t.me/...">
+<input id="members" type="number" placeholder="Members Needed e.g. 500">
+<input id="txid" placeholder="Enter TxID after payment to above address">
+<button class="btn" onclick="sendTask()">Send To Admin</button>
+</div>
+
+<div class="card">
+<h3>👤 Profile / Withdraw</h3>
+<input id="wallet" placeholder="Your USDT BEP20 Address (Withdraw)">
+<input id="withdrawAmt" type="number" placeholder="Amount Min $1">
+<button class="btn" onclick="withdraw()">Request Withdraw (Need 5 refs)</button>
+<p style="font-size:12px;color:#aaa">Min $1 + 5 referrals. Fake referrals banned.</p>
+</div>
+
+<div class="bar">
+<button onclick="location.reload()">👥 Referral</button>
+<button>📋 Task</button>
+<button>💰 Watch Ad</button>
+<button>👤 Profile</button>
+</div>
+
+<script>
+const tg = Telegram.WebApp; tg.expand();
+const ADSGRAM_ID = "55283";
+const ADMIN_WALLET = "0x52824938de138886fdf6f7a80262e5c0a173d92c";
+let watched = parseInt(localStorage.getItem('ads')||'0');
+let bal = parseFloat(localStorage.getItem('bal')||'0');
+document.getElementById('cnt').innerText=watched; document.getElementById('bal').innerText=bal.toFixed(2);
+const AdController = window.Adsgram.init({ blockId: ADSGRAM_ID });
+document.getElementById('watchBtn').addEventListener('click', async()=>{
+ if(watched>=30){alert("Daily limit 30 reached");return;}
+ try{const r=await AdController.show(); if(r){ watched++; bal+=0.05; localStorage.setItem('ads',watched); localStorage.setItem('bal',bal); document.getElementById('cnt').innerText=watched; document.getElementById('bal').innerText=bal.toFixed(2); tg.sendData(JSON.stringify({action:"ad_watched", count:watched})); } }catch(e){alert("Watch full ad to earn");}
+});
+function sendTask(){
+ const title=document.getElementById('taskTitle').value, link=document.getElementById('taskLink').value, members=document.getElementById('members').value, txid=document.getElementById('txid').value;
+ if(!title||!link||!txid){alert("Fill all + TxID");return;}
+ let cost=parseInt(members)<=2000?4:6;
+ if(confirm(`Pay $${cost} to ${ADMIN_WALLET}. Confirm TxID ${txid}?`)){ tg.sendData(JSON.stringify({action:"add_task", title, link, members, txid, cost})); alert("Sent to Admin"); }
+}
+function withdraw(){
+ const wallet=document.getElementById('wallet').value, amt=document.getElementById('withdrawAmt').value;
+ if(!wallet){alert("Enter BEP20 wallet");return;}
+ tg.sendData(JSON.stringify({action:"withdraw", wallet, amount:amt}));
+}
+// ADMIN ONLY FREE TASK - hidden from users
+if(tg.initDataUnsafe.user && tg.initDataUnsafe.user.id==123456789){ // ADD YOUR ADMIN ID
+ const div=document.createElement('div'); div.className='card';
+ div.innerHTML='<h3>🔧 Admin Free Task (Only you see)</h3><input id="adminTaskTitle" placeholder="Title"><input id="adminTaskLink" placeholder="Link"><button class="btn" onclick="adminAdd()">Add Free Task</button>';
+ document.body.appendChild(div);
+}
+function adminAdd(){ const t=document.getElementById('adminTaskTitle').value, l=document.getElementById('adminTaskLink').value; tg.sendData(JSON.stringify({action:"admin_free_task", title:t, link:l})); }
+</script>
+</body>
+</html>
