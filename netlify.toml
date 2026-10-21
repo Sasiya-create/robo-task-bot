@@ -1,0 +1,10 @@
+[build]
+  functions = "netlify/functions"
+
+[functions]
+  included_files = ["**/*"]
+
+[[redirects]]
+  from = "/miniapp/*"
+  to = "/miniapp/:splat"
+  status = 200
